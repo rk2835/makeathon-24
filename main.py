@@ -6,18 +6,40 @@ import pandas as pd
 from datetime import datetime, date
 import time
 import os
+
+# Check if attendance.csv exists, if not create it with appropriate columns
 if not os.path.exists('attendance.csv'):
-    attendance = pd.DataFrame(columns=['Name', 'Date', 'Time'])
+    attendance = pd.DataFrame(columns=['Name', 'Subject', 'Room', 'Date', 'Time'])
     attendance.to_csv('attendance.csv', index=False)
+else:
+    attendance = pd.read_csv('attendance.csv')
+
 # Load known face encodings
 with open('face_encodings.pkl', 'rb') as f:
     data = pickle.load(f)
 known_encodings = data['encodings']
 known_names = data['names']
 
+# Get subject input
+subjects = ['Math', 'Science', 'English']  # List of subjects
+print("Available Subjects:")
+for idx, subject in enumerate(subjects, start=1):
+    print(f"{idx}. {subject}")
+subject_choice = int(input("Select the subject by entering the number: "))
+selected_subject = subjects[subject_choice - 1]
+print(f"Subject selected: {selected_subject}")
+
+# Get room number input
+rooms = ['Room 101', 'Room 102', 'Room 103']  # List of rooms
+print("\nAvailable Rooms:")
+for idx, room in enumerate(rooms, start=1):
+    print(f"{idx}. {room}")
+room_choice = int(input("Select the room by entering the number: "))
+selected_room = rooms[room_choice - 1]
+print(f"Room selected: {selected_room}")
+
 # Initialize variables
 video_capture = cv2.VideoCapture(0)
-attendance = pd.DataFrame(columns=['Name', 'Date', 'Time'])
 capture_interval = 5  # seconds
 last_capture_time = time.time() - capture_interval
 
@@ -49,13 +71,22 @@ while True:
                 # Mark attendance
                 date_today = date.today().strftime("%Y-%m-%d")
                 time_now = datetime.now().strftime("%H:%M:%S")
-                if not ((attendance['Name'] == name) & (attendance['Date'] == date_today)).any():
-                    new_entry = pd.DataFrame([{'Name': name, 'Date': date_today, 'Time': time_now}])
+                if not ((attendance['Name'] == name) &
+                        (attendance['Subject'] == selected_subject) &
+                        (attendance['Room'] == selected_room) &
+                        (attendance['Date'] == date_today)).any():
+                    new_entry = pd.DataFrame([{
+                        'Name': name,
+                        'Subject': selected_subject,
+                        'Room': selected_room,
+                        'Date': date_today,
+                        'Time': time_now
+                    }])
                     attendance = pd.concat([attendance, new_entry], ignore_index=True)
                     attendance.to_csv('attendance.csv', index=False)
-                    print(f"Attendance marked for {name} at {time_now}")
+                    print(f"Attendance marked for {name} in {selected_subject} at {selected_room} on {time_now}")
                 else:
-                    print(f"{name}'s attendance already marked today.")
+                    print(f"{name}'s attendance already marked for {selected_subject} in {selected_room} today.")
             else:
                 print("Unknown face detected.")
 
